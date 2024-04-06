@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import mongoose from "mongoose";
 
 dotenv.config();
 
@@ -18,6 +19,15 @@ app.get("/", (req, res) => {
   res.status(200).json({ message: "Hello There" });
 });
 
-app.listen(process.env.PORT, () => {
-  console.log("Listening on port: ", process.env.PORT);
-});
+connectDb();
+
+async function connectDb() {
+  try {
+    await mongoose.connect(process.env.MONGO_URL);
+    app.listen(process.env.PORT, () => {
+      console.log("Listening on port: ", process.env.PORT);
+    });
+  } catch (err) {
+    console.log(err);
+  }
+}
