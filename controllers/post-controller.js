@@ -27,4 +27,20 @@ const createPost = async (req, res) => {
     return res.status(500).json({ message: "Internal Server Error" });
   }
 };
-export { allPosts, createPost };
+
+// GET /posts/:id
+const getPost = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const post = await Post.findById(id);
+    if (!post) {
+      return res.status(404).json({ message: "Post not found" });
+    }
+    return res.status(200).json(post);
+  } catch (error) {
+    console.log(error);
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
+};
+
+export { allPosts, createPost, getPost };
