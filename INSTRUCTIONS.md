@@ -332,3 +332,127 @@ export { allPosts, createPost, getPost };
 ## Test out in Postman
 
 - GET request @ http://localhost:8080/posts/idNumberHere
+
+## Update route and controller to upload an image to cloudinary
+
+---
+
+### Post Controller
+
+---
+
+```
+
+    import Post from "../model/Post.js";
+    import cloudinary from "cloudinary";
+    import path from "path";
+    // GET /posts
+    const allPosts = async (req, res) => {
+    try {
+        const posts = await Post.find();
+        return res.status(200).json(posts);
+    } catch (error) {
+        console.log(error);
+    }
+    };
+
+    // POST /posts
+    const createPost = async (req, res) => {
+    if (!req.body.title || !req.body.desc) {
+        return res
+        .status(400)
+        .json({ message: "Title and Description are required" });
+    }
+    try {
+        const result = await cloudinary.uploader.upload(req.file.path);
+        const imgUrl = result.secure_url;
+        const newPost = new Post({
+        title: req.body.title,
+        desc: req.body.desc,
+        image: imgUrl,
+        });
+        await newPost.save();
+        return res.status(201).json(newPost);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+    };
+
+    // GET /posts/:id
+    const getPost = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const post = await Post.findById(id);
+        if (!post) {
+        return res.status(404).json({ message: "Post not found" });
+        }
+        return res.status(200).json(post);
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Internal Server Error" });
+    }
+    };
+
+    export { allPosts, createPost, getPost };
+```
+
+### Post Route
+
+---
+
+```
+    import express from "express";
+
+    import {
+    allPosts,
+    createPost,
+    getPost,
+    } from "../controllers/post-controller.js";
+    import cloudinary from "cloudinary";
+    import multer from "multer";
+    import path from "path";
+    import dotenv from "dotenv";
+    dotenv.config();
+
+    cloudinary.config({
+    cloud_name: process.env.CLOUD_NAME,
+    api_key: process.env.API_KEY,
+    api_secret: process.env.API_SECRET,
+    });
+
+    const storage = multer.diskStorage({
+    destination: "./uploads",
+    filename: (req, file, cb) => {
+        cb(
+        null,
+        file.fieldname + "-" + Date.now() + path.extname(file.originalname)
+        );
+    },
+    });
+
+    const upload = multer({ storage });
+
+    const router = express.Router();
+
+    // GET /posts
+    router.get("/", allPosts);
+
+    // POST /posts
+    router.post("/", upload.single("image"), createPost);
+
+    // GET /posts/:id
+    router.get("/:id", getPost);
+
+    export default router;
+```
+
+**Note**:
+1 - Make sure to create a cloudinary account and put the variables in a .env file
+2 - Put .env file in the .gitignore file so passwords etc are not shared
+
+## Test route out with postman
+
+---
+
+- Make sure its the right url and you are using form data, selecting the image as well

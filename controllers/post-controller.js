@@ -1,5 +1,6 @@
 import Post from "../model/Post.js";
-
+import cloudinary from "cloudinary";
+import path from "path";
 // GET /posts
 const allPosts = async (req, res) => {
   try {
@@ -12,14 +13,19 @@ const allPosts = async (req, res) => {
 
 // POST /posts
 const createPost = async (req, res) => {
-  const { title, desc, image } = req.body;
-  if (!title || !desc) {
+  if (!req.body.title || !req.body.desc) {
     return res
       .status(400)
       .json({ message: "Title and Description are required" });
   }
   try {
-    const newPost = new Post({ title, desc, image });
+    const result = await cloudinary.uploader.upload(req.file.path);
+    const imgUrl = result.secure_url;
+    const newPost = new Post({
+      title: req.body.title,
+      desc: req.body.desc,
+      image: imgUrl,
+    });
     await newPost.save();
     return res.status(201).json(newPost);
   } catch (error) {
